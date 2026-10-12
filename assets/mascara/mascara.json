@@ -1,0 +1,10 @@
+{
+  "textura": "textura.png",
+  "brillo": 0.06,
+  "paletas": ["#ffffff", "#ffd2a0", "#ffb3dc", "#d8c2ff", "#a8f0f0"],
+  "sonidos": {
+    "boca": null,
+    "cejas": null,
+    "parpadeo": null
+  }
+}

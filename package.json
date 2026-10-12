@@ -1,0 +1,13 @@
+{
+  "name": "mascara-dia-de-muertos-ra",
+  "private": true,
+  "type": "module",
+  "description": "Filtro facial de RA: máscara de Día de Muertos mapeada a la malla facial",
+  "scripts": {
+    "test": "node pruebas/seguimiento.test.mjs"
+  },
+  "dependencies": {
+    "@mediapipe/tasks-vision": "0.10.14",
+    "three": "0.169.0"
+  }
+}

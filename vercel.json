@@ -1,0 +1,6 @@
+{
+  "installCommand": "npm install --no-audit --no-fund",
+  "buildCommand": "bash build.sh",
+  "outputDirectory": "public",
+  "framework": null
+}

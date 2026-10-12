@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#2a0a3d">
+  <title>Máscara de Día de Muertos · Filtro RA</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+  <video id="video" playsinline muted autoplay></video>
+  <canvas id="lienzo"></canvas>
+
+  <div id="cargando" class="capa">
+    <div class="spinner"></div>
+    <p id="cargando-texto">Preparando la máscara…</p>
+  </div>
+
+  <div id="error" class="capa oculto">
+    <p id="error-texto"></p>
+    <button id="reintentar" type="button">Reintentar</button>
+  </div>
+
+  <p id="aviso-cara" class="aviso oculto">Pon tu cara frente a la cámara</p>
+  <p id="aviso-sonido" class="aviso aviso-arriba oculto">Toca la pantalla para activar el sonido 🔊</p>
+
+  <div id="hud">
+    <div id="gestos">
+      <span class="gesto" data-gesto="boca" title="Abre la boca: pétalos de cempasúchil">🌼</span>
+      <span class="gesto" data-gesto="cejas" title="Levanta las cejas: papel picado">🎊</span>
+      <span class="gesto" data-gesto="parpadeo" title="Parpadea: cambia el color">🕯️</span>
+    </div>
+    <button id="grabar" type="button" title="Grabar video" aria-label="Grabar video"></button>
+  </div>
+
+  <pre id="depuracion" class="oculto"></pre>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

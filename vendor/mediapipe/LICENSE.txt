@@ -1,0 +1,2 @@
+MediaPipe Tasks Vision 0.10.14 (Apache License 2.0)
+https://github.com/google-ai-edge/mediapipe/blob/master/LICENSE
