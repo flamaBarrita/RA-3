@@ -266,8 +266,13 @@ def capa_color(color, alfa):
 # ---------- elementos comunes ----------
 def base(l, color_base, intensidad_ocre):
     # llega hasta el borde de la cara y se desvanece suave, sin línea dura
-    borde = [lerp(p(o), p(a), 0.28) for o, a in zip(OVALO, ANILLO1)]
-    m = mascara_poligono(borde, 26 * K)
+    # en la frente sube más (hasta el nacimiento del pelo) para que no se vea cortada
+    borde = []
+    for o, a, e in zip(OVALO, ANILLO1, EXTERNO):
+        w = min(1.0, max(0.0, (700 * K - p(o)[1]) / (330 * K)))
+        t = 0.28 + 0.42 * w
+        borde.append(lerp(p(o), p(a), t * 2) if t <= 0.5 else lerp(p(a), p(e), (t - 0.5) * 2))
+    m = mascara_poligono(borde, 34 * K)
     l.pegar(capa_color(color_base, m.point(lambda v: int(v * OPACIDAD_BASE))))
     # franja de sombreado ocre hacia el contorno (~120 px)
     interior = m.filter(ImageFilter.GaussianBlur(110 * K))
@@ -561,12 +566,15 @@ def catrin():
 
     capa = l.capa()
     d = ImageDraw.Draw(capa)
-    # pétalos rojos sobre cada cuenca
+    # corona de pétalos alrededor de cada cuenca: rojo y naranja alternados
     for cx in (784, 1264):
-        for k, da in enumerate((-35, 0, 35)):
-            a = math.radians(-90 + da)
-            bx, by = cx + math.cos(a) * (CUENCA_RX + 24), CUENCA_Y + math.sin(a) * (CUENCA_RY + 24)
-            hoja(d, q(bx, by), 54 * K, 26 * K, a, ROJO_PETALO)
+        n = 12
+        for k in range(n):
+            a = 2 * math.pi * k / n + math.pi / n
+            bx, by = cx + math.cos(a) * (CUENCA_RX + 30), CUENCA_Y + math.sin(a) * (CUENCA_RY + 30)
+            hoja(d, q(bx, by), 62 * K, 28 * K, a, ROJO_PETALO if k % 2 == 0 else CEMPA)
+            ax, ay = cx + math.cos(a + math.pi / n) * (CUENCA_RX + 14), CUENCA_Y + math.sin(a + math.pi / n) * (CUENCA_RY + 14)
+            elipse(d, q(ax, ay), 6 * K, 6 * K, fill=DORADO)
     # cruz latina roja con puntas de flor de lis
     cx, top, bot = 1024, 470, 622
     brazo_y = 515
@@ -613,8 +621,42 @@ def catrin():
     cempasuchil(d, q(905, 1530), 22 * K)
     cempasuchil(d, q(1143, 1530), 22 * K)
 
+    # pómulos: cempasúchil con hojas
+    d = ImageDraw.Draw(l.img)
+    for lado in (1, -1):
+        x = 540 if lado == 1 else FINAL - 540
+        hoja(d, q(x - lado * 55, 1130), 60 * K, 24 * K, math.radians(150 if lado == 1 else 30))
+        hoja(d, q(x + lado * 45, 1150), 54 * K, 22 * K, math.radians(40 if lado == 1 else 140), VERDE_CLARO)
+        cempasuchil(d, q(x, 1110), 46 * K)
+
+    corona_catrin(l)
     huecos(l)
     return guardar(l, "textura_catrin.png")
+
+
+def corona_catrin(l):
+    """Banda de cempasúchiles y rosas rojas en la frente alta, con hojas y oro."""
+    arco = list(range(30, 36)) + list(range(0, 8))
+
+    def en_anillo(k, t):
+        o, a, e = p(OVALO[k]), p(ANILLO1[k]), p(EXTERNO[k])
+        return lerp(o, a, t * 2) if t <= 0.5 else lerp(a, e, (t - 0.5) * 2)
+
+    d = ImageDraw.Draw(l.img)
+    for j, k in enumerate(arco):
+        c = en_anillo(k, 0.55)
+        ang = math.atan2(c[1] - S / 2, c[0] - S / 2)
+        hoja(d, en_anillo(k, 0.78), 66 * K, 26 * K, ang + 0.6 * (1 if j % 2 else -1))
+    for j, k in enumerate(arco):
+        c = en_anillo(k, 0.5)
+        if j % 2 == 0:
+            cempasuchil(ImageDraw.Draw(l.img), c, 64 * K)
+        else:
+            rosa(l, c, 60 * K, ang=j * 0.8)
+    d = ImageDraw.Draw(l.img)
+    for j, k in enumerate(arco[:-1]):
+        c = lerp(en_anillo(k, 0.3), en_anillo(arco[j + 1], 0.3), 0.5)
+        elipse(d, c, 8 * K, 8 * K, fill=DORADO, outline=hexa("8A6A10"), width=K)
 
 
 def catrina():
