@@ -4,9 +4,9 @@ Filtro de realidad aumentada para web: al abrir la página se enciende la cámar
 
 Actividad 3 · Máscara de Día de Muertos con mapeo facial de precisión (mejora de la [Actividad 2](https://github.com/flamaBarrita/RA-2)).
 
-![Textura sobre la malla en Blender](docs/img/vista_blender.png)
+![Catrín (arriba) y catrina (abajo) sobre la malla en Blender, de frente, a 30° y a 60°](docs/img/catrin_catrina_blender.jpg)
 
-> La textura que trae el repositorio es **provisional** (sirve para probar el mapeo). La máscara final se pinta en Blender siguiendo [docs/GUIA_TEXTURA.md](docs/GUIA_TEXTURA.md) y se guarda como `assets/mascara/textura.png`.
+Hay dos máscaras: **catrín** (`assets/mascara/textura_catrin.png`) y **catrina** (`assets/mascara/textura_catrina.png`). El filtro carga `assets/mascara/textura.png`, que es la catrina. Se generan con `tools/generar_texturas_catrines.py` siguiendo el diseño de [docs/DISENO_CATRINES.md](docs/DISENO_CATRINES.md), y se pueden retocar a mano en Blender con [docs/GUIA_TEXTURA.md](docs/GUIA_TEXTURA.md).
 
 ## Gestos
 
@@ -84,17 +84,19 @@ js/
   datos-cara.js               triángulos, UV y cara de referencia (generado)
 assets/mascara/
   mascara.json                configuración de la máscara
-  textura.png                 TEXTURA DE LA MÁSCARA (reemplázala por la tuya)
+  textura.png                 textura que carga el filtro (copia de la catrina)
+  textura_catrina.png, textura_catrin.png  las dos máscaras
 plantilla/
   plantilla_uv.png            plantilla UV con fondo blanco
   plantilla_uv_transparente.png  la misma plantilla como capa transparente
 blender/
   cara_base.obj               malla con UV (la misma que usa el filtro)
   mascara_dia_de_muertos.blend  archivo listo para Texture Paint
-  textura.png                 lienzo transparente que pinta el .blend
+  textura.png                 imagen que pinta el .blend (empieza con la catrina)
 tools/
   generar_datos_cara.py       genera datos-cara.js, cara_base.obj y las plantillas
-  generar_textura_provisional.py  textura provisional de prueba
+  generar_texturas_catrines.py  dibuja las texturas de catrín y catrina
+  generar_textura_provisional.py  textura provisional de prueba (primera versión)
   preparar_blender.py         crea el .blend para pintar
 pruebas/seguimiento.test.mjs  pruebas del seguimiento
 vendor/                       Three.js y MediaPipe (copias locales, sin CDN)
