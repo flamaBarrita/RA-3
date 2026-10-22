@@ -1,10 +1,14 @@
 {
   "textura": "textura.png",
-  "brillo": 0.06,
-  "paletas": ["#ffffff", "#ffd2a0", "#ffb3dc", "#d8c2ff", "#a8f0f0"],
+  "acabado": "maquillaje",
+  "ajustesAcabado": {
+    "luzPiel": 0.9,
+    "pielEnBlanco": 0.1,
+    "contraste": 0.9,
+    "detalle": 0.2,
+    "opacidad": 0.97
+  },
   "sonidos": {
-    "boca": null,
-    "cejas": null,
-    "parpadeo": null
+    "cejas": null
   }
 }

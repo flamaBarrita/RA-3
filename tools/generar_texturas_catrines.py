@@ -34,7 +34,7 @@ def hexa(c, a=255):
 
 
 NEGRO = hexa("0E0B10")
-HUESO = hexa("F4EBDD")
+HUESO = hexa("F0E4CF")
 OCRE = hexa("E8B98A")
 OCRE_OSCURO = hexa("C98A5E")
 GRIS_MEJILLA = hexa("2A2328")
@@ -269,7 +269,7 @@ def base(l, color_base, intensidad_ocre):
     m = mascara_poligono(oval)
     l.pegar(capa_color(color_base, m))
     # franja de sombreado ocre hacia el contorno (~120 px)
-    interior = m.filter(ImageFilter.GaussianBlur(70 * K))
+    interior = m.filter(ImageFilter.GaussianBlur(110 * K))
     banda = ImageChops.subtract(m, interior).point(lambda v: min(255, int(v * 2.2 * intensidad_ocre)))
     l.pegar(capa_color(OCRE, banda))
     # sienes y bajo los pómulos, más oscuro
@@ -281,6 +281,16 @@ def base(l, color_base, intensidad_ocre):
     sombra = ImageChops.multiply(sombra.filter(ImageFilter.GaussianBlur(60 * K)), m)
     sombra = sombra.point(lambda v: int(v * 0.55 * intensidad_ocre))
     l.pegar(capa_color(OCRE_OSCURO, sombra))
+    # grano de pintura: variaciones suaves de tono para que no se vea plano
+    rnd = np.random.default_rng(7)
+    ruido = rnd.normal(0, 1, (S // 16, S // 16)).astype(np.float32)
+    ruido = Image.fromarray(((ruido * 0.5 + 0.5).clip(0, 1) * 255).astype(np.uint8))
+    ruido = ruido.resize((S, S), Image.BICUBIC).filter(ImageFilter.GaussianBlur(6 * K))
+    fino = rnd.normal(0, 1, (S // 2, S // 2)).astype(np.float32)
+    fino = Image.fromarray(((fino * 0.5 + 0.5).clip(0, 1) * 255).astype(np.uint8)).resize((S, S))
+    for capa_ruido, fuerza, col in ((ruido, 0.10, hexa("B89A78")), (fino, 0.05, hexa("9C8A74"))):
+        a = ImageChops.multiply(capa_ruido, m).point(lambda v, f=fuerza: int(v * f))
+        l.pegar(capa_color(col, a))
 
 
 def contorno_negro(l, hueco_corona=None):
@@ -306,7 +316,7 @@ def contorno_negro(l, hueco_corona=None):
     l.pegar(capa)
     # borde negro definido sobre el óvalo
     d = ImageDraw.Draw(l.img)
-    d.line(oval + oval[:1], fill=NEGRO, width=8 * K, joint="curve")
+    d.line(oval + oval[:1], fill=NEGRO[:3] + (200,), width=5 * K, joint="curve")
 
 
 def mejillas_hundidas(l):
@@ -319,7 +329,7 @@ def mejillas_hundidas(l):
         d.line(pts, fill=GRIS_MEJILLA, width=60 * K, joint="curve")
         elipse(d, q(X(330), 1010), 28 * K, 28 * K, fill=GRIS_MEJILLA)
     capa = capa.filter(ImageFilter.GaussianBlur(26 * K))
-    l.pegar(capa, 0.6)
+    l.pegar(capa, 0.4)
 
 
 def cuencas(l, festonear, color_feston=NEGRO):
@@ -585,7 +595,7 @@ def catrin():
 def catrina():
     l = Lienzo()
     contorno_negro(l)
-    base(l, hexa("F8F3EA"), 0.8)
+    base(l, hexa("F3E9D8"), 1.0)
     mejillas_hundidas(l)
     filigrana_comun(l)
     cuencas(l, festonear=False)

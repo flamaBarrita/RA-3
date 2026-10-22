@@ -8,15 +8,31 @@ Actividad 3 · Máscara de Día de Muertos con mapeo facial de precisión (mejor
 
 Hay dos máscaras: **catrín** (`assets/mascara/textura_catrin.png`) y **catrina** (`assets/mascara/textura_catrina.png`). El filtro carga `assets/mascara/textura.png`, que es la catrina. Se generan con `tools/generar_texturas_catrines.py` siguiendo el diseño de [docs/DISENO_CATRINES.md](docs/DISENO_CATRINES.md), y se pueden retocar a mano en Blender con [docs/GUIA_TEXTURA.md](docs/GUIA_TEXTURA.md).
 
-## Gestos
+## Acabado realista: maquillaje sobre la piel
+
+La máscara no se pega como una calcomanía plana: se pinta **encima de la piel real** (`js/material-maquillaje.js`).
+
+- La luz de la cara se toma del propio video: las sombras de la nariz, los pómulos y la luz de la habitación oscurecen o aclaran la pintura igual que a la piel.
+- En la base clara se transparenta un poco la piel, y la base tiene grano de pintura, para que no se vea como un blanco plano.
+- Se ajusta en `assets/mascara/mascara.json` → `ajustesAcabado`:
+
+| Ajuste | Qué hace | Valor |
+| --- | --- | --- |
+| `luzPiel` | Cuánto toma la pintura la luz y las sombras de la cara (0 = nada, 1 = todo) | 0.9 |
+| `pielEnBlanco` | Cuánta piel se transparenta en las zonas claras | 0.1 |
+| `detalle` | Cuánto detalle fino de la piel pasa a la pintura (arrugas, textura) | 0.2 |
+| `contraste` | Fuerza de las sombras (menor = más suaves) | 0.9 |
+| `opacidad` | Opacidad general de la pintura | 0.97 |
+
+Para comparar con el acabado plano de antes, abre la página con `?acabado=plano`.
+
+## Gesto
 
 | Gesto | Efecto temático |
 | --- | --- |
-| 🌼 Abrir la boca | Salen pétalos de cempasúchil de la boca y caen balanceándose; siguen saliendo mientras la boca esté abierta. Suena un soplo con campanitas. |
-| 🎊 Levantar las cejas | Cae una lluvia de papel picado de colores sobre la cabeza, con campanas. |
-| 🕯️ Parpadear | La máscara cambia de color (hueso → cempasúchil → rosa mexicano → morado → turquesa) y salen chispas de vela de los ojos. |
+| 🎊 Levantar las cejas | Cae una lluvia de papel picado de colores sobre la cabeza, con campanas, y sigue cayendo mientras las cejas estén arriba. |
 
-Los íconos de abajo se iluminan cuando se detecta el gesto. El botón rojo graba un video del filtro (con sonido) y lo descarga, útil para el artículo de LinkedIn. El sonido se activa al tocar la pantalla una vez (los navegadores no permiten audio antes).
+El ícono de abajo se ilumina cuando se detecta el gesto. El botón rojo graba un video del filtro (con sonido) y lo descarga, útil para el artículo de LinkedIn. El sonido se activa al tocar la pantalla una vez (los navegadores no permiten audio antes).
 
 ## Mejoras frente a la Actividad 2
 
@@ -50,7 +66,7 @@ temblor con la cara quieta:                       Actividad 3 ≈ 0.15 px · Act
 
 La guía completa, con la alternativa de pintar en Krita / Photoshop / Procreate sobre la plantilla, está en [docs/GUIA_TEXTURA.md](docs/GUIA_TEXTURA.md).
 
-En `assets/mascara/mascara.json` se pueden cambiar el nombre de la textura, el brillo, los colores que se alternan al parpadear y sonidos propios por gesto (MP3/WAV en la misma carpeta).
+En `assets/mascara/mascara.json` se pueden cambiar el nombre de la textura, el acabado (ver arriba) y el sonido del papel picado (MP3/WAV en la misma carpeta).
 
 ## Probarlo
 
@@ -65,7 +81,8 @@ Para el teléfono hay que publicarlo con https: en Vercel, importa el repositori
 
 Opciones en la dirección:
 
-- `?debug` muestra los valores de los gestos, el giro de la cabeza en grados, el error del ajuste y los cuadros por segundo. Las teclas 1, 2 y 3 simulan boca, parpadeo y cejas.
+- `?debug` muestra los valores de los gestos, el giro de la cabeza en grados, el error del ajuste y los cuadros por segundo. La tecla 3 simula levantar las cejas.
+- `?acabado=plano` muestra la máscara plana, sin la luz de la piel.
 - `?limpio` oculta los botones (para grabar).
 
 ## Estructura
@@ -78,7 +95,8 @@ js/
   seguimiento.js              pose de la cabeza + expresión, filtros one euro (mejora)
   malla-mascara.js            malla de la máscara con el mapa UV del modelo canónico
   gestos.js                   gestos con umbral, histéresis, pausa y línea base
-  particulas.js               pétalos, papel picado y chispas
+  material-maquillaje.js      pinta la máscara sobre la piel con la luz del video
+  particulas.js               papel picado
   sonido.js                   sonidos (sintetizados o desde archivo)
   grabador.js                 grabación de video
   datos-cara.js               triángulos, UV y cara de referencia (generado)

@@ -3,6 +3,7 @@ import { FaceLandmarker, FilesetResolver } from '../vendor/mediapipe/vision_bund
 import { MallaMascara } from './malla-mascara.js';
 import { crearGestos, blendshapesComoObjeto } from './gestos.js';
 import { Particulas, FORMA } from './particulas.js';
+import { crearMaterialMaquillaje, aplicarAcabado, MedidorLuz } from './material-maquillaje.js';
 import { Sonido } from './sonido.js';
 import { Grabador } from './grabador.js';
 
@@ -12,8 +13,8 @@ const RUTA_CONFIG = 'assets/mascara/mascara.json';
 
 const parametros = new URLSearchParams(location.search);
 const DEPURAR = parametros.has('debug');
-// En modo ?debug las teclas 1, 2 y 3 simulan boca, parpadeo y cejas para probar sin gestos.
-const SIMULADO = { jawOpen: false, eyeBlinkLeft: false, browInnerUp: false };
+// En modo ?debug la tecla 3 simula levantar las cejas para probar sin gestos.
+const SIMULADO = { browInnerUp: false };
 if (parametros.has('limpio')) document.body.classList.add('limpio');
 
 const $ = (id) => document.getElementById(id);
@@ -37,67 +38,32 @@ fondo.position.z = -9000;
 fondo.renderOrder = -1;
 escena.add(fondo);
 
-const material = new THREE.MeshStandardMaterial({
-  transparent: true,
-  alphaTest: 0.03,
-  side: THREE.DoubleSide,
-  roughness: 0.6,
-  metalness: 0.0,
-  emissive: new THREE.Color(0xffffff),
-  emissiveIntensity: 0,
-});
+// La máscara se pinta sobre la piel real (ver js/material-maquillaje.js).
+const material = crearMaterialMaquillaje(texturaVideo);
 const mascara = new MallaMascara(material);
 escena.add(mascara.malla);
+const medidorLuz = new MedidorLuz(video);
+const _tam = new THREE.Vector2();
 
-escena.add(new THREE.AmbientLight(0xffffff, 1.9));
-const luz = new THREE.DirectionalLight(0xffffff, 1.3);
-luz.position.set(0.3, 0.6, 1);
-escena.add(luz);
+const figuras = new Particulas({ max: 700 });   // papel picado
+escena.add(figuras.puntos);
 
-const figuras = new Particulas({ max: 700 });             // pétalos y papel picado
-const brillos = new Particulas({ max: 400, aditivo: true }); // chispas de vela
-escena.add(figuras.puntos, brillos.puntos);
-
-const gestos = crearGestos();
+// Único efecto: levantar las cejas hace caer papel picado.
+const gestos = crearGestos().filter((g) => g.nombre === 'cejas');
 const sonido = new Sonido();
 const grabador = new Grabador(lienzo, () => sonido.grabacion?.stream);
 let config = {};
 
-// ---------- Efectos de cada gesto ----------
+// ---------- Efecto: papel picado ----------
 const color = (lista) => lista.map((c) => new THREE.Color(c));
-const COLORES_PETALO = color([0xff8c00, 0xffa000, 0xffb300, 0xff6f00, 0xffc107]);
 const COLORES_PAPEL = color([0xe91e78, 0x7b1fa2, 0xff8c00, 0x00a5b4, 0x43a047, 0xffd600]);
-const COLORES_VELA = color([0xffb74d, 0xffe082, 0xff8f00]);
-// Cada parpadeo cambia el color de la máscara (se pueden cambiar en mascara.json).
-let PALETAS = color(['#ffffff', '#ffd2a0', '#ffb3dc', '#d8c2ff', '#a8f0f0']);
-const efecto = { brillo: 0, paleta: 0, tinte: new THREE.Color(1, 1, 1) };
 const _p = new THREE.Vector3();
-const _q = new THREE.Vector3();
 
-function emitirPetalos(cantidad, fuerza = 1) {
-  const s = mascara.altoCara;
-  mascara.medio([13, 14], _p);
-  figuras.emitir(_p, cantidad, {
-    forma: FORMA.PETALO,
-    colores: COLORES_PETALO,
-    direccion: { x: 0, y: 1 },
-    apertura: 2.2,
-    velocidad: [s * 0.5 * fuerza, s * 1.3 * fuerza],
-    vida: [1.4, 2.4],
-    tam: [s * 0.09, s * 0.15],
-    gravedad: s * 0.9,
-    arrastre: 2.5,
-    balanceo: s * 0.25,
-    giro: 6,
-    radio: s * 0.04,
-  });
-}
-
-function lluviaPapelPicado() {
+function lluviaPapelPicado(cantidad = 70) {
   const s = mascara.altoCara;
   mascara.punto(10, _p);
-  _p.y += s * 0.55;
-  figuras.emitir(_p, 70, {
+  _p.y = Math.min(_p.y + s * 0.55, alto - s * 0.05);
+  figuras.emitir(_p, cantidad, {
     forma: FORMA.PAPEL,
     colores: COLORES_PAPEL,
     direccion: { x: 0, y: -1 },
@@ -113,36 +79,9 @@ function lluviaPapelPicado() {
   });
 }
 
-function velasEnOjos() {
-  const s = mascara.altoCara;
-  for (const ojo of [[33, 133], [263, 362]]) {
-    mascara.medio(ojo, _q);
-    brillos.emitir(_q, 24, {
-      colores: COLORES_VELA,
-      direccion: { x: 0, y: 1 },
-      apertura: 1.4,
-      velocidad: [s * 0.15, s * 0.5],
-      vida: [0.4, 0.9],
-      tam: [s * 0.03, s * 0.08],
-      gravedad: -s * 0.4,
-      radio: s * 0.05,
-    });
-  }
-}
-
 const alIniciar = {
-  boca() {
-    emitirPetalos(45, 1.2);
-    efecto.brillo = Math.max(efecto.brillo, 0.5);
-  },
   cejas() {
     lluviaPapelPicado();
-    efecto.brillo = Math.max(efecto.brillo, 0.4);
-  },
-  parpadeo() {
-    efecto.paleta = (efecto.paleta + 1) % PALETAS.length;
-    velasEnOjos();
-    efecto.brillo = Math.max(efecto.brillo, 0.6);
   },
 };
 
@@ -156,17 +95,24 @@ function procesarGestos(bs, ahora, dt) {
       sonido.reproducir(g.nombre);
     }
     iconos[g.nombre]?.classList.toggle('activo', g.activo);
+    // mientras las cejas sigan arriba, sigue cayendo papel picado
+    if (g.activo && Math.random() < 20 * dt) lluviaPapelPicado(3);
   }
-  const boca = gestos[0];
-  if (boca.activo) emitirPetalos(Math.random() < 30 * dt ? 2 : 0);
 }
 
-function actualizarEfectos(dt) {
-  efecto.brillo = Math.max(0, efecto.brillo - dt * 1.5);
-  efecto.tinte.lerp(PALETAS[efecto.paleta], Math.min(1, dt * 6));
-  material.color.copy(efecto.tinte);
-  material.emissive.copy(efecto.tinte);
-  material.emissiveIntensity = (config.brillo ?? 0.06) + efecto.brillo * 0.5;
+function actualizarMaquillaje() {
+  renderer.getDrawingBufferSize(_tam);
+  material.uniforms.tamBuffer.value.copy(_tam);
+  material.uniforms.opacidad.value = material.opacidadBase * (material.opacity ?? 1);
+  if (!mascara.malla.visible) return;
+  // caja de la cara en píxeles del video (sin espejo, y hacia abajo)
+  const s = mascara.seguidor.salida;
+  let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+  for (let i = 0; i < s.length; i += 3) {
+    x0 = Math.min(x0, s[i]); x1 = Math.max(x1, s[i]);
+    y0 = Math.min(y0, alto - s[i + 1]); y1 = Math.max(y1, alto - s[i + 1]);
+  }
+  material.uniforms.luzMedia.value = medidorLuz.actualizar({ x0, y0, x1, y1 });
 }
 
 // ---------- Tamaño ----------
@@ -189,7 +135,6 @@ function ajustarTamano() {
   renderer.setPixelRatio(escala);
   renderer.setSize(ancho, alto, false);
   figuras.material.uniforms.escala.value = escala;
-  brillos.material.uniforms.escala.value = escala;
 }
 
 // ---------- Bucle principal ----------
@@ -231,9 +176,8 @@ function bucle() {
     medidor.desde = ahora;
   }
 
-  actualizarEfectos(dt);
+  actualizarMaquillaje();
   figuras.actualizar(dt);
-  brillos.actualizar(dt);
   renderer.render(escena, camara);
 }
 
@@ -241,13 +185,12 @@ function simular(bs) {
   for (const [nombre, activo] of Object.entries(SIMULADO)) {
     if (!activo) continue;
     bs[nombre] = 0.95;
-    if (nombre === 'eyeBlinkLeft') bs.eyeBlinkRight = 0.95;
   }
 }
 
 if (DEPURAR) {
   $('depuracion').classList.remove('oculto');
-  const teclas = { 1: 'jawOpen', 2: 'eyeBlinkLeft', 3: 'browInnerUp' };
+  const teclas = { 3: 'browInnerUp' };
   addEventListener('keydown', (e) => { if (teclas[e.key]) SIMULADO[teclas[e.key]] = true; });
   addEventListener('keyup', (e) => { if (teclas[e.key]) SIMULADO[teclas[e.key]] = false; });
 }
@@ -305,7 +248,8 @@ async function crearDetector() {
 
 async function cargarMascara() {
   config = await (await fetch(RUTA_CONFIG)).json();
-  if (Array.isArray(config.paletas) && config.paletas.length) PALETAS = color(config.paletas);
+  const acabado = parametros.get('acabado') ?? config.acabado ?? 'maquillaje';
+  aplicarAcabado(material, acabado, acabado === (config.acabado ?? 'maquillaje') ? config.ajustesAcabado : {});
   const base = RUTA_CONFIG.slice(0, RUTA_CONFIG.lastIndexOf('/') + 1);
   let tex;
   try {
@@ -317,9 +261,7 @@ async function cargarMascara() {
   }
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
-  material.map = tex;
-  material.emissiveMap = tex;
-  material.needsUpdate = true;
+  material.uniforms.mapa.value = tex;
   sonido.configurar(config.sonidos, base);
 }
 
@@ -340,7 +282,7 @@ async function iniciar() {
     const [, det] = await Promise.all([
       abrirCamara(),
       detector ?? crearDetector(),
-      material.map ? null : cargarMascara(),
+      material.uniforms.mapa.value ? null : cargarMascara(),
     ]);
     detector = det;
     ajustarTamano();
