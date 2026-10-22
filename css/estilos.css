@@ -141,7 +141,34 @@ button {
 
 #grabar.grabando::after { inset: 16px; border-radius: 6px; }
 
-body.limpio #hud { display: none; }
+#selector {
+  position: fixed;
+  left: 50%;
+  bottom: calc(100px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  display: flex;
+  padding: 4px;
+  gap: 4px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, .45);
+  z-index: 5;
+}
+
+#selector[hidden] { display: none; }
+
+#selector button {
+  border: 0;
+  border-radius: 999px;
+  padding: 8px 18px;
+  font: inherit;
+  font-size: .95rem;
+  color: #fff;
+  background: transparent;
+}
+
+#selector button[aria-pressed="true"] { background: #b3263a; }
+
+body.limpio #hud, body.limpio #selector { display: none; }
 
 #depuracion {
   position: fixed;

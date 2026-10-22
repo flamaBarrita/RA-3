@@ -332,28 +332,51 @@ def mejillas_hundidas(l):
     l.pegar(capa, 0.4)
 
 
+CUENCA_RX, CUENCA_RY = 140, 116   # tamaño de las cuencas (px de 2048)
+CUENCA_Y = 784
+
+
 def cuencas(l, festonear, color_feston=NEGRO):
-    for cx in (784, 1264):
-        c = q(cx, 780)
-        rx, ry = 150 * K, 125 * K
-        # degradado radial vino -> negro
+    """Cuencas con profundidad: casi negras junto al ojo y rojo vino hacia la
+    orilla, con un contorno fino y delineado en el ojo real."""
+    for cx, ojo, signo in ((784, OJO_DER, -1), (1264, OJO_IZQ, 1)):
+        c = q(cx, CUENCA_Y)
+        rx, ry = CUENCA_RX * K, CUENCA_RY * K
         yy, xx = np.mgrid[0:2 * ry, 0:2 * rx]
         dist = np.sqrt(((xx - rx) / rx) ** 2 + ((yy - ry) / ry) ** 2)
-        t = np.clip(dist, 0, 1)[..., None]
-        col = (1 - t) * np.array(VINO[:3]) + t * np.array(NEGRO_CUENCA[:3])
-        alfa = (dist <= 1).astype(np.uint8) * 255
-        bloque = np.dstack([col.astype(np.uint8), alfa]).astype(np.uint8)
+        t = np.clip(dist, 0, 1)
+        humo = np.array(hexa("1A0C10")[:3], np.float32)
+        vino = np.array(VINO[:3], np.float32)
+        rosado = np.array(hexa("A8323F")[:3], np.float32)
+        a = np.clip((t - 0.4) / 0.38, 0, 1)[..., None]
+        b = np.clip((t - 0.75) / 0.25, 0, 1)[..., None]
+        col = humo * (1 - a) + vino * a
+        col = col * (1 - b) + rosado * b
+        # sombra interior en la orilla para que se vea hundida
+        orilla = np.clip((t - 0.9) / 0.1, 0, 1)[..., None]
+        col = col * (1 - 0.35 * orilla)
+        alfa = np.clip((1 - t) * 40, 0, 1) * 255
+        bloque = np.dstack([col.clip(0, 255).astype(np.uint8), alfa.astype(np.uint8)])
         capa = l.capa()
         capa.paste(Image.fromarray(bloque, "RGBA"), (int(c[0] - rx), int(c[1] - ry)))
         d = ImageDraw.Draw(capa)
         if festonear:
-            n = 26
+            n = 24
             for k in range(n):
-                a = 2 * math.pi * k / n
-                x = c[0] + math.cos(a) * rx
-                y = c[1] + math.sin(a) * ry
-                elipse(d, (x, y), 18 * K, 18 * K, fill=color_feston)
-        elipse(d, c, rx, ry, outline=NEGRO, width=10 * K)
+                ang = 2 * math.pi * k / n
+                x = c[0] + math.cos(ang) * (rx + 6 * K)
+                y = c[1] + math.sin(ang) * (ry + 6 * K)
+                elipse(d, (x, y), 15 * K, 15 * K, fill=color_feston)
+        elipse(d, c, rx, ry, outline=NEGRO, width=6 * K)
+        # delineado del ojo con una pequeña cola hacia afuera
+        contorno = [p(i) for i in ojo]
+        d.line(contorno + contorno[:1], fill=NEGRO, width=6 * K, joint="curve")
+        # brillo suave arriba, como en el maquillaje con sombra
+        brillo = l.capa()
+        db = ImageDraw.Draw(brillo)
+        elipse(db, (c[0], c[1] - ry * 0.62), rx * 0.42, ry * 0.12, fill=(255, 210, 210, 70))
+        brillo = brillo.filter(ImageFilter.GaussianBlur(8 * K))
+        capa.alpha_composite(brillo)
         l.pegar(capa)
 
 
@@ -361,8 +384,8 @@ def petalos_cuencas(l):
     capa = l.capa()
     d = ImageDraw.Draw(capa)
     for cx in (784, 1264):
-        c = q(cx, 780)
-        rx, ry = 150 * K, 125 * K
+        c = q(cx, CUENCA_Y)
+        rx, ry = CUENCA_RX * K, CUENCA_RY * K
         n = 10
         for k in range(n):
             a = 2 * math.pi * k / n + math.pi / n
@@ -387,8 +410,8 @@ def petalos_cuencas(l):
 def perlas_cuencas(l):
     d = ImageDraw.Draw(l.img)
     for cx in (784, 1264):
-        c = q(cx, 780)
-        rx, ry = 150 * K + 34 * K, 125 * K + 34 * K
+        c = q(cx, CUENCA_Y)
+        rx, ry = (CUENCA_RX + 30) * K, (CUENCA_RY + 30) * K
         for k in range(12):
             a = math.radians(20 + k * (140 / 11))
             x, y = c[0] + math.cos(a) * rx, c[1] + math.sin(a) * ry
@@ -540,7 +563,7 @@ def catrin():
     for cx in (784, 1264):
         for k, da in enumerate((-35, 0, 35)):
             a = math.radians(-90 + da)
-            bx, by = cx + math.cos(a) * 172, 780 + math.sin(a) * 150
+            bx, by = cx + math.cos(a) * (CUENCA_RX + 24), CUENCA_Y + math.sin(a) * (CUENCA_RY + 24)
             hoja(d, q(bx, by), 54 * K, 26 * K, a, ROJO_PETALO)
     # cruz latina roja con puntas de flor de lis
     cx, top, bot = 1024, 470, 622
@@ -600,8 +623,6 @@ def catrina():
     filigrana_comun(l)
     cuencas(l, festonear=False)
     petalos_cuencas(l)
-    cuencas_borde = ImageDraw.Draw(l.img)
-    perlas_cuencas(l)
     nariz(l)
     dientes(l)
 

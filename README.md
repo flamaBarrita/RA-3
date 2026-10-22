@@ -6,7 +6,7 @@ Actividad 3 · Máscara de Día de Muertos con mapeo facial de precisión (mejor
 
 ![Catrín (arriba) y catrina (abajo) sobre la malla en Blender, de frente, a 30° y a 60°](docs/img/catrin_catrina_blender.jpg)
 
-Hay dos máscaras: **catrín** (`assets/mascara/textura_catrin.png`) y **catrina** (`assets/mascara/textura_catrina.png`). El filtro carga `assets/mascara/textura.png`, que es la catrina. Se generan con `tools/generar_texturas_catrines.py` siguiendo el diseño de [docs/DISENO_CATRINES.md](docs/DISENO_CATRINES.md), y se pueden retocar a mano en Blender con [docs/GUIA_TEXTURA.md](docs/GUIA_TEXTURA.md).
+Hay dos máscaras: **catrín** (`assets/mascara/textura_catrin.png`) y **catrina** (`assets/mascara/textura_catrina.png`). Se eligen con los botones **Catrina / Catrín** de abajo (o con `?mascara=catrin` en la dirección); la última elegida se recuerda. Empieza con la catrina (`inicial` en `mascara.json`). Se generan con `tools/generar_texturas_catrines.py` siguiendo el diseño de [docs/DISENO_CATRINES.md](docs/DISENO_CATRINES.md), y se pueden retocar a mano en Blender con [docs/GUIA_TEXTURA.md](docs/GUIA_TEXTURA.md).
 
 ## Acabado realista: maquillaje sobre la piel
 
@@ -83,6 +83,7 @@ Opciones en la dirección:
 
 - `?debug` muestra los valores de los gestos, el giro de la cabeza en grados, el error del ajuste y los cuadros por segundo. La tecla 3 simula levantar las cejas.
 - `?acabado=plano` muestra la máscara plana, sin la luz de la piel.
+- `?mascara=catrin` o `?mascara=catrina` abre con esa máscara.
 - `?limpio` oculta los botones (para grabar).
 
 ## Estructura
@@ -102,7 +103,7 @@ js/
   datos-cara.js               triángulos, UV y cara de referencia (generado)
 assets/mascara/
   mascara.json                configuración de la máscara
-  textura.png                 textura que carga el filtro (copia de la catrina)
+  textura.png                 copia de la catrina (respaldo si no hay "mascaras")
   textura_catrina.png, textura_catrin.png  las dos máscaras
 plantilla/
   plantilla_uv.png            plantilla UV con fondo blanco

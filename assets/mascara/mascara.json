@@ -1,4 +1,9 @@
 {
+  "mascaras": {
+    "catrina": "textura_catrina.png",
+    "catrin": "textura_catrin.png"
+  },
+  "inicial": "catrina",
   "textura": "textura.png",
   "acabado": "maquillaje",
   "ajustesAcabado": {

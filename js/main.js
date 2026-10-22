@@ -246,22 +246,59 @@ async function crearDetector() {
   }
 }
 
+const texturas = {};
+let mascaraActual = null;
+
+async function cargarTextura(ruta) {
+  let tex;
+  try {
+    tex = await new THREE.TextureLoader().loadAsync(ruta);
+  } catch {
+    throw Object.assign(new Error('sin-textura'), {
+      mensaje: `No encontré la textura de la máscara (${ruta}).`,
+    });
+  }
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  return tex;
+}
+
+/** Cambia entre catrín y catrina (botones de abajo, o ?mascara=catrin). */
+function ponerMascara(nombre) {
+  if (!texturas[nombre]) return;
+  mascaraActual = nombre;
+  material.uniforms.mapa.value = texturas[nombre];
+  for (const b of document.querySelectorAll('#selector button')) {
+    b.setAttribute('aria-pressed', String(b.dataset.mascara === nombre));
+  }
+  try { localStorage.setItem('mascara', nombre); } catch {}
+}
+
+function leerPreferencia() {
+  try { return localStorage.getItem('mascara'); } catch { return null; }
+}
+
+for (const b of document.querySelectorAll('#selector button')) {
+  b.addEventListener('click', (e) => {
+    e.stopPropagation();
+    ponerMascara(b.dataset.mascara);
+  });
+}
+
 async function cargarMascara() {
   config = await (await fetch(RUTA_CONFIG)).json();
   const acabado = parametros.get('acabado') ?? config.acabado ?? 'maquillaje';
   aplicarAcabado(material, acabado, acabado === (config.acabado ?? 'maquillaje') ? config.ajustesAcabado : {});
   const base = RUTA_CONFIG.slice(0, RUTA_CONFIG.lastIndexOf('/') + 1);
-  let tex;
-  try {
-    tex = await new THREE.TextureLoader().loadAsync(base + config.textura);
-  } catch {
-    throw Object.assign(new Error('sin-textura'), {
-      mensaje: `No encontré la textura de la máscara (assets/mascara/${config.textura}).`,
-    });
-  }
-  tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
-  material.uniforms.mapa.value = tex;
+  const lista = config.mascaras ?? { mascara: config.textura };
+  const nombres = Object.keys(lista);
+  let elegida = parametros.get('mascara') ?? leerPreferencia() ?? config.inicial;
+  if (!lista[elegida]) elegida = nombres[0];
+  texturas[elegida] = await cargarTextura(base + lista[elegida]);
+  ponerMascara(elegida);
+  // las demás se cargan en segundo plano para cambiar al instante
+  for (const n of nombres) if (!texturas[n]) cargarTextura(base + lista[n]).then((t) => (texturas[n] = t), () => {});
+  $('selector').hidden = nombres.length < 2;
   sonido.configurar(config.sonidos, base);
 }
 
