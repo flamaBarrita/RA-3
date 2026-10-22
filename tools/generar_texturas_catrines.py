@@ -264,7 +264,14 @@ def capa_color(color, alfa):
 
 
 # ---------- elementos comunes ----------
-def base(l, color_base, intensidad_ocre):
+def base(l, color_base, intensidad_ocre, opacidad=None):
+    """Base de la calavera. opacidad < 1 deja ver más el tono de la piel."""
+    capa = Lienzo()
+    _base(capa, color_base, intensidad_ocre)
+    l.pegar(capa.img, OPACIDAD_BASE if opacidad is None else opacidad)
+
+
+def _base(l, color_base, intensidad_ocre):
     # llega hasta el borde de la cara y se desvanece suave, sin línea dura
     # en la frente sube más (hasta el nacimiento del pelo) para que no se vea cortada
     borde = []
@@ -273,7 +280,7 @@ def base(l, color_base, intensidad_ocre):
         t = 0.28 + 0.42 * w
         borde.append(lerp(p(o), p(a), t * 2) if t <= 0.5 else lerp(p(a), p(e), (t - 0.5) * 2))
     m = mascara_poligono(borde, 34 * K)
-    l.pegar(capa_color(color_base, m.point(lambda v: int(v * OPACIDAD_BASE))))
+    l.pegar(capa_color(color_base, m))
     # franja de sombreado ocre hacia el contorno (~120 px)
     interior = m.filter(ImageFilter.GaussianBlur(110 * K))
     banda = ImageChops.subtract(m, interior).point(lambda v: min(255, int(v * 2.2 * intensidad_ocre)))
@@ -325,7 +332,7 @@ def contorno_negro(l, hueco_corona=None):
     d.line(oval + oval[:1], fill=NEGRO[:3] + (200,), width=5 * K, joint="curve")
 
 
-def mejillas_hundidas(l):
+def mejillas_hundidas(l, fuerza=0.4):
     capa = l.capa()
     d = ImageDraw.Draw(capa)
     for lado in (1, -1):
@@ -335,10 +342,10 @@ def mejillas_hundidas(l):
         d.line(pts, fill=GRIS_MEJILLA, width=60 * K, joint="curve")
         elipse(d, q(X(330), 1010), 28 * K, 28 * K, fill=GRIS_MEJILLA)
     capa = capa.filter(ImageFilter.GaussianBlur(26 * K))
-    l.pegar(capa, 0.4)
+    l.pegar(capa, fuerza)
 
 
-OPACIDAD_BASE = 0.9   # la base deja ver un poco la piel
+OPACIDAD_BASE = 0.8   # la base deja ver la piel
 
 CUENCA_RX, CUENCA_RY = 140, 116   # tamaño de las cuencas (px de 2048)
 CUENCA_Y = 784
@@ -555,108 +562,145 @@ def guardar(l, nombre):
 
 # ---------- variantes ----------
 def catrin():
+    """Catrín: cuencas negras con rojo abajo, cruz negra con hojas verdes en la
+    frente, nariz de corazón rojo con puntitos, dientes grandes y mejillas
+    oscuras con filigrana roja y verde. Sin flores."""
     l = Lienzo()
-    base(l, HUESO, 1.25)
-    mejillas_hundidas(l)
-    filigrana_comun(l)
-    cuencas(l, festonear=False)
-    perlas_cuencas(l)
-    nariz(l)
+    base(l, hexa("EDE6DA"), 0.6, opacidad=0.6)
+    mejillas_hundidas(l, 0.35)
+    cuencas_catrin(l)
+    frente_catrin(l)
+    mejillas_catrin(l)
+    nariz_catrin(l)
     dientes(l)
-
-    capa = l.capa()
-    d = ImageDraw.Draw(capa)
-    # corona de pétalos alrededor de cada cuenca: rojo y naranja alternados
-    for cx in (784, 1264):
-        n = 12
-        for k in range(n):
-            a = 2 * math.pi * k / n + math.pi / n
-            bx, by = cx + math.cos(a) * (CUENCA_RX + 30), CUENCA_Y + math.sin(a) * (CUENCA_RY + 30)
-            hoja(d, q(bx, by), 62 * K, 28 * K, a, ROJO_PETALO if k % 2 == 0 else CEMPA)
-            ax, ay = cx + math.cos(a + math.pi / n) * (CUENCA_RX + 14), CUENCA_Y + math.sin(a + math.pi / n) * (CUENCA_RY + 14)
-            elipse(d, q(ax, ay), 6 * K, 6 * K, fill=DORADO)
-    # cruz latina roja con puntas de flor de lis
-    cx, top, bot = 1024, 470, 622
-    brazo_y = 515
-    w = 22
-    cruz = [(cx - w, top + 12), (cx + w, top + 12), (cx + w, brazo_y - w), (cx + 35 + 0, brazo_y - w),
-            (cx + 35, brazo_y + w), (cx + w, brazo_y + w), (cx + w, bot - 12), (cx - w, bot - 12),
-            (cx - w, brazo_y + w), (cx - 35, brazo_y + w), (cx - 35, brazo_y - w), (cx - w, brazo_y - w)]
-    d.polygon([q(*pt) for pt in cruz], fill=ROJO, outline=NEGRO, width=4 * K)
-    for (px, py, ang) in ((cx, top + 6, -90), (cx, bot - 6, 90), (cx - 41, brazo_y, 180), (cx + 41, brazo_y, 0)):
-        a = math.radians(ang)
-        for da in (-50, 0, 50):
-            b = a + math.radians(da)
-            r = 13 if da == 0 else 10
-            c = q(px + math.cos(b) * 10, py + math.sin(b) * 10)
-            elipse(d, c, r * K, r * K, fill=ROJO, outline=NEGRO, width=3 * K)
-    d.line([q(cx, top + 30), q(cx, bot - 30)], fill=ROJO_OSCURO, width=3 * K)
-    # volutas negras y doradas a los lados de la cruz, siguiendo las cejas
-    for lado in (1, -1):
-        def Q(x, y):
-            return q(x if lado == 1 else FINAL - x, y)
-        voluta(d, Q(985, 560), Q(820, 520), -0.3 * lado, NEGRO, 6 * K, sentido=lado)
-        voluta(d, Q(990, 600), Q(780, 590), 0.25 * lado, DORADO, 6 * K, sentido=-lado)
-        voluta(d, Q(820, 520), Q(700, 560), -0.3 * lado, DORADO, 4 * K, sentido=lado)
-        hoja(d, Q(880, 500), 44 * K, 19 * K, math.radians(-20 if lado == 1 else 200), VERDE)
-        hoja(d, Q(760, 610), 40 * K, 17 * K, math.radians(15 if lado == 1 else 165), VERDE_CLARO)
-        # filigrana roja y verde sobre cada ceja
-        ceja = [Q(602, 640), Q(700, 600), Q(820, 580), Q(933, 585)]
-        d.line(ceja, fill=ROJO, width=6 * K, joint="curve")
-        for k, pt in enumerate(ceja[1:]):
-            elipse(d, pt, 7 * K, 7 * K, fill=VERDE_CLARO, outline=NEGRO, width=2 * K)
-        # espiral verde y dorada en el pómulo
-        espiral(d, Q(560, 960), 40 * K, 1.6, VERDE, 7 * K, sentido=lado)
-        espiral(d, Q(560, 960), 26 * K, 1.2, DORADO, 5 * K, sentido=-lado, ang0=1.0)
-    l.pegar(capa)
-
-    # barbilla: rosa con hojas y cempasúchiles
-    capa = l.capa()
-    d = ImageDraw.Draw(capa)
-    hoja(d, q(930, 1585), 80 * K, 34 * K, math.radians(160))
-    hoja(d, q(1118, 1585), 80 * K, 34 * K, math.radians(20))
-    l.pegar(capa)
-    rosa(l, q(1024, 1560), 60 * K)
-    d = ImageDraw.Draw(l.img)
-    cempasuchil(d, q(905, 1530), 22 * K)
-    cempasuchil(d, q(1143, 1530), 22 * K)
-
-    # pómulos: cempasúchil con hojas
-    d = ImageDraw.Draw(l.img)
-    for lado in (1, -1):
-        x = 540 if lado == 1 else FINAL - 540
-        hoja(d, q(x - lado * 55, 1130), 60 * K, 24 * K, math.radians(150 if lado == 1 else 30))
-        hoja(d, q(x + lado * 45, 1150), 54 * K, 22 * K, math.radians(40 if lado == 1 else 140), VERDE_CLARO)
-        cempasuchil(d, q(x, 1110), 46 * K)
-
-    corona_catrin(l)
+    barbilla_catrin(l)
     huecos(l)
     return guardar(l, "textura_catrin.png")
 
 
-def corona_catrin(l):
-    """Banda de cempasúchiles y rosas rojas en la frente alta, con hojas y oro."""
-    arco = list(range(30, 36)) + list(range(0, 8))
+def cuencas_catrin(l):
+    """Cuencas anchas casi cuadradas: negras arriba y rojas en la parte de abajo."""
+    for lado in (1, -1):
+        cx, cy, rx, ry = (790 if lado == 1 else FINAL - 790), 792, 205, 150
+        pts = []
+        for t in range(160):
+            a = 2 * math.pi * t / 160
+            c, s_ = math.cos(a), math.sin(a)
+            x = math.copysign(abs(c) ** 0.75, c) * rx * (1.04 if c * lado < 0 else 1.0)
+            y = math.copysign(abs(s_) ** 0.85, s_) * ry * (0.9 if s_ < 0 else 1.0)
+            pts.append(q(cx + x, cy + y))
+        m = mascara_poligono(pts, 3 * K)
+        yy = np.arange(S, dtype=np.float32)[:, None] / K
+        t = np.clip((yy - (cy + 10)) / 120, 0, 1)
+        negro = np.array(NEGRO[:3], np.float32)
+        rojo = np.array(hexa("B0142C")[:3], np.float32)
+        col = negro + (rojo - negro) * (t ** 1.2)[..., None] * 0.9
+        col = np.broadcast_to(col, (S, 1, 3))
+        capa = Image.fromarray(np.repeat(col, S, axis=1).astype(np.uint8), "RGB").convert("RGBA")
+        capa.putalpha(m)
+        l.pegar(capa)
+        # brillos blancos en las orillas de abajo
+        d = ImageDraw.Draw(l.img)
+        for x0, y0, x1, y1 in ((-185, 40, -160, 105), (-120, 125, -60, 140), (150, 110, 185, 60)):
+            d.line([q(cx + x0 * lado, cy + y0), q(cx + x1 * lado, cy + y1)], fill=BLANCO, width=6 * K)
 
-    def en_anillo(k, t):
-        o, a, e = p(OVALO[k]), p(ANILLO1[k]), p(EXTERNO[k])
-        return lerp(o, a, t * 2) if t <= 0.5 else lerp(a, e, (t - 0.5) * 2)
 
+def frente_catrin(l):
     d = ImageDraw.Draw(l.img)
-    for j, k in enumerate(arco):
-        c = en_anillo(k, 0.55)
-        ang = math.atan2(c[1] - S / 2, c[0] - S / 2)
-        hoja(d, en_anillo(k, 0.78), 66 * K, 26 * K, ang + 0.6 * (1 if j % 2 else -1))
-    for j, k in enumerate(arco):
-        c = en_anillo(k, 0.5)
-        if j % 2 == 0:
-            cempasuchil(ImageDraw.Draw(l.img), c, 64 * K)
-        else:
-            rosa(l, c, 60 * K, ang=j * 0.8)
+    # cruz negra con rombo rojo al centro
+    cx, cy = 1024, 500
+    d.polygon([q(cx - 14, cy - 80), q(cx + 14, cy - 80), q(cx + 14, cy - 16), q(cx + 60, cy - 16),
+               q(cx + 60, cy + 14), q(cx + 14, cy + 14), q(cx + 14, cy + 90), q(cx - 14, cy + 90),
+               q(cx - 14, cy + 14), q(cx - 60, cy + 14), q(cx - 60, cy - 16), q(cx - 14, cy - 16)],
+              fill=NEGRO)
+    for px, py in ((cx, cy - 86), (cx, cy + 96), (cx - 66, cy - 1), (cx + 66, cy - 1)):
+        d.polygon([q(px, py - 14), q(px + 12, py), q(px, py + 14), q(px - 12, py)], fill=NEGRO)
+    d.polygon([q(cx, cy - 26), q(cx + 18, cy - 1), q(cx, cy + 24), q(cx - 18, cy - 1)], fill=ROJO)
+    # hojitas verdes bajo la cruz, entre las cejas
+    for ang, dx in ((90, 0), (120, -26), (60, 26)):
+        hoja(d, q(cx + dx, cy + 150), 60 * K, 22 * K, math.radians(ang), VERDE_CLARO, borde=VERDE)
+    # abanico de hojas verdes sobre cada ceja, como en la foto
+    for lado in (1, -1):
+        for fila, (radio, n, largo, color) in enumerate(((250, 7, 66, VERDE_CLARO), (318, 8, 58, VERDE))):
+            for k in range(n):
+                a = math.radians(200 + (330 - 200) * k / (n - 1))
+                x = 790 + math.cos(a) * radio * 1.05
+                y = 800 + math.sin(a) * radio * 0.95
+                if lado == -1:
+                    x = FINAL - x
+                ang = math.atan2(math.sin(a), math.cos(a) * lado)
+                hoja(d, q(x, y), largo * K, 22 * K, ang, color, borde=hexa("1B5E20"))
+        # puntitos rojos y blancos en la sien
+        for k in range(4):
+            x = 560 - k * 30
+            elipse(d, q(x if lado == 1 else FINAL - x, 600 + k * 34), 8 * K, 8 * K,
+                   fill=ROJO if k % 2 == 0 else BLANCO)
+
+
+def mejillas_catrin(l):
+    capa = l.capa()
+    d = ImageDraw.Draw(capa)
+    for lado in (1, -1):
+        def Q(x, y):
+            return q(x if lado == 1 else FINAL - x, y)
+        # sombra negra que baja junto a la boca, con una franja roja adentro
+        # curva suave (Bézier) más gruesa al centro, como en la foto
+        p0, p1, p2, p3 = (730, 1030), (590, 1120), (600, 1330), (800, 1385)
+        for k in range(121):
+            t = k / 120
+            x = (1 - t) ** 3 * p0[0] + 3 * (1 - t) ** 2 * t * p1[0] + 3 * (1 - t) * t ** 2 * p2[0] + t ** 3 * p3[0]
+            y = (1 - t) ** 3 * p0[1] + 3 * (1 - t) ** 2 * t * p1[1] + 3 * (1 - t) * t ** 2 * p2[1] + t ** 3 * p3[1]
+            r = 10 + 34 * math.sin(math.pi * t) ** 0.8
+            elipse(d, Q(x, y), r * K, r * K, fill=NEGRO)
+            if 0.2 < t < 0.8:
+                rr = r * 0.4
+                elipse(d, Q(x + 6, y), rr * K, rr * K, fill=hexa("8E1B2E"))
+    l.pegar(capa.filter(ImageFilter.GaussianBlur(2 * K)))
     d = ImageDraw.Draw(l.img)
-    for j, k in enumerate(arco[:-1]):
-        c = lerp(en_anillo(k, 0.3), en_anillo(arco[j + 1], 0.3), 0.5)
-        elipse(d, c, 8 * K, 8 * K, fill=DORADO, outline=hexa("8A6A10"), width=K)
+    for lado in (1, -1):
+        def Q(x, y):
+            return q(x if lado == 1 else FINAL - x, y)
+        # filigrana roja y verde en el pómulo
+        espiral(d, Q(520, 1010), 36 * K, 1.5, ROJO, 7 * K, sentido=lado)
+        voluta(d, Q(560, 980), Q(760, 1000), -0.3 * lado, ROJO, 6 * K, sentido=-lado)
+        hoja(d, Q(470, 1080), 64 * K, 22 * K, math.radians(110 if lado == 1 else 70), VERDE_CLARO, borde=VERDE)
+        hoja(d, Q(520, 1130), 56 * K, 20 * K, math.radians(80 if lado == 1 else 100), VERDE, borde=hexa("1B5E20"))
+        for k in range(3):
+            elipse(d, Q(600 + k * 40, 1050 + k * 6), 7 * K, 7 * K, fill=BLANCO)
+        # rayitas verdes y rojas hacia la mandíbula
+        for k in range(3):
+            y = 1300 + k * 50
+            d.line([Q(520 - k * 10, y), Q(470 - k * 14, y + 30)], fill=VERDE_CLARO if k % 2 else ROJO, width=7 * K)
+
+
+def nariz_catrin(l):
+    d = ImageDraw.Draw(l.img)
+    c = q(1024, 1050)
+    w = 230 * K
+    corazon(d, c, w, NEGRO, punta_arriba=True)
+    corazon(d, (c[0], c[1] + 6 * K), w * 0.82, ROJO, punta_arriba=True)
+    corazon(d, (c[0], c[1] + 22 * K), w * 0.36, hexa("5A0A14"), punta_arriba=True)
+    # puntitos blancos siguiendo el borde
+    for k in range(9):
+        t = k / 8
+        for lado in (1, -1):
+            x = 1024 + lado * (8 + 70 * t)
+            y = 975 + 95 * t
+            elipse(d, q(x, y), 5 * K, 5 * K, fill=BLANCO)
+
+
+def barbilla_catrin(l):
+    d = ImageDraw.Draw(l.img)
+    cx, cy = 1024, 1585
+    for ang, largo in ((-90, 100), (-130, 80), (-50, 80)):
+        hoja(d, q(cx + math.cos(math.radians(ang)) * 30, cy + math.sin(math.radians(ang)) * 30), largo * K,
+             36 * K, math.radians(ang), ROJO, borde=hexa("7A0F1E"))
+    elipse(d, q(cx, cy), 16 * K, 16 * K, fill=ROJO_OSCURO)
+    for lado in (1, -1):
+        voluta(d, q(cx + lado * 30, cy + 10), q(cx + lado * 140, cy - 20), 0.3 * lado, ROJO, 6 * K,
+               sentido=-lado)
+        hoja(d, q(cx + lado * 120, cy + 30), 56 * K, 20 * K, math.radians(0 if lado == 1 else 180),
+             VERDE_CLARO, borde=VERDE)
 
 
 def catrina():
