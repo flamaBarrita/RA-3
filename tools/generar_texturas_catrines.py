@@ -566,7 +566,7 @@ def catrin():
     frente, nariz de corazón rojo con puntitos, dientes grandes y mejillas
     oscuras con filigrana roja y verde. Sin flores."""
     l = Lienzo()
-    base(l, hexa("EDE6DA"), 0.8, opacidad=0.93)
+    base(l, hexa("D4C8B6"), 0.8, opacidad=0.93)
     mejillas_hundidas(l, 0.35)
     cuencas_catrin(l)
     frente_catrin(l)
@@ -727,7 +727,7 @@ def barbilla_catrin(l):
 
 def catrina():
     l = Lienzo()
-    base(l, hexa("F3E9D8"), 1.0)
+    base(l, hexa("DCCDB6"), 1.0)
     mejillas_hundidas(l)
     filigrana_comun(l)
     cuencas(l, festonear=False)
