@@ -8,10 +8,10 @@
   "acabado": "maquillaje",
   "ajustesAcabado": {
     "luzPiel": 0.9,
-    "pielEnBlanco": 0.1,
+    "pielEnBlanco": 0.0,
     "contraste": 0.9,
-    "detalle": 0.2,
-    "opacidad": 0.97
+    "detalle": 0.12,
+    "opacidad": 1.0
   },
   "sonidos": {
     "cejas": null
