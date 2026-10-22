@@ -345,7 +345,7 @@ def mejillas_hundidas(l, fuerza=0.4):
     l.pegar(capa, fuerza)
 
 
-OPACIDAD_BASE = 0.8   # la base deja ver la piel
+OPACIDAD_BASE = 0.95   # base con color; deja ver apenas la piel
 
 CUENCA_RX, CUENCA_RY = 140, 116   # tamaño de las cuencas (px de 2048)
 CUENCA_Y = 784
@@ -566,7 +566,7 @@ def catrin():
     frente, nariz de corazón rojo con puntitos, dientes grandes y mejillas
     oscuras con filigrana roja y verde. Sin flores."""
     l = Lienzo()
-    base(l, hexa("EDE6DA"), 0.6, opacidad=0.6)
+    base(l, hexa("EDE6DA"), 0.8, opacidad=0.93)
     mejillas_hundidas(l, 0.35)
     cuencas_catrin(l)
     frente_catrin(l)
@@ -579,30 +579,52 @@ def catrin():
 
 
 def cuencas_catrin(l):
-    """Cuencas anchas casi cuadradas: negras arriba y rojas en la parte de abajo."""
+    """Cuencas redondeadas en forma de gota hacia la sien: negras junto al ojo,
+    vino y rojo hacia abajo, con orilla roja fina y brillos."""
     for lado in (1, -1):
-        cx, cy, rx, ry = (790 if lado == 1 else FINAL - 790), 792, 205, 150
-        pts = []
-        for t in range(160):
-            a = 2 * math.pi * t / 160
-            c, s_ = math.cos(a), math.sin(a)
-            x = math.copysign(abs(c) ** 0.75, c) * rx * (1.04 if c * lado < 0 else 1.0)
-            y = math.copysign(abs(s_) ** 0.85, s_) * ry * (0.9 if s_ < 0 else 1.0)
-            pts.append(q(cx + x, cy + y))
-        m = mascara_poligono(pts, 3 * K)
+        cx, cy, rx, ry = (792 if lado == 1 else FINAL - 792), 795, 178, 140
+
+        def forma(extra=0):
+            pts = []
+            for t in range(180):
+                a = 2 * math.pi * t / 180
+                c, s_ = math.cos(a), math.sin(a)
+                ancho = (rx + extra) * (1.12 if c * lado < 0 else 0.95)   # más larga hacia la sien
+                alto = (ry + extra) * (0.82 if s_ < 0 else 1.0)            # arriba sigue la ceja
+                y = s_ * alto - (abs(c) ** 3) * 18 * (1 if c * lado < 0 else 0)  # la punta sube a la sien
+                pts.append(q(cx + c * ancho, cy + y))
+            return pts
+
+        # orilla roja fina por fuera
+        capa = l.capa()
+        ImageDraw.Draw(capa).polygon(forma(16), fill=hexa("B0142C"))
+        capa.putalpha(ImageChops.subtract(capa.getchannel("A"), mascara_poligono(forma(8))))
+        l.pegar(capa.filter(ImageFilter.GaussianBlur(1 * K)))
+        # relleno: negro arriba que baja a vino y rojo, con borde suave
+        m = mascara_poligono(forma(), 4 * K)
         yy = np.arange(S, dtype=np.float32)[:, None] / K
-        t = np.clip((yy - (cy + 10)) / 120, 0, 1)
-        negro = np.array(NEGRO[:3], np.float32)
-        rojo = np.array(hexa("B0142C")[:3], np.float32)
-        col = negro + (rojo - negro) * (t ** 1.2)[..., None] * 0.9
-        col = np.broadcast_to(col, (S, 1, 3))
-        capa = Image.fromarray(np.repeat(col, S, axis=1).astype(np.uint8), "RGB").convert("RGBA")
+        t = np.clip((yy - (cy - 10)) / (ry + 10), 0, 1) ** 1.4
+        negro = np.array(hexa("120A0E")[:3], np.float32)
+        vino = np.array(hexa("6E0E1E")[:3], np.float32)
+        rojo = np.array(hexa("C8203A")[:3], np.float32)
+        col = np.where(t[..., None] < 0.55, negro + (vino - negro) * (t[..., None] / 0.55),
+                       vino + (rojo - vino) * ((t[..., None] - 0.55) / 0.45))
+        col = np.repeat(np.broadcast_to(col, (S, 1, 3)), S, axis=1)
+        capa = Image.fromarray(col.astype(np.uint8), "RGB").convert("RGBA")
         capa.putalpha(m)
         l.pegar(capa)
-        # brillos blancos en las orillas de abajo
+        # brillos: arco blanco abajo y gotita en la sien
         d = ImageDraw.Draw(l.img)
-        for x0, y0, x1, y1 in ((-185, 40, -160, 105), (-120, 125, -60, 140), (150, 110, 185, 60)):
-            d.line([q(cx + x0 * lado, cy + y0), q(cx + x1 * lado, cy + y1)], fill=BLANCO, width=6 * K)
+        caja = [q(cx - rx * 0.8, cy - ry * 0.7)[0], q(cx - rx * 0.8, cy - ry * 0.7)[1],
+                q(cx + rx * 0.8, cy + ry * 0.85)[0], q(cx + rx * 0.8, cy + ry * 0.85)[1]]
+        d.arc(caja, 60 if lado == 1 else 70, 110 if lado == 1 else 120, fill=(255, 255, 255, 200), width=5 * K)
+        punta = (cx - lado * rx * 1.0, cy + ry * 0.25)
+        elipse(d, q(*punta), 6 * K, 6 * K, fill=BLANCO)
+        # puntitos blancos bajo la cuenca
+        for k in range(5):
+            a = math.radians(55 + k * 18)
+            x = cx + math.cos(a) * (rx + 38) * (-lado if k < 0 else 1) * 0.95
+            elipse(d, q(cx + (x - cx) * lado, cy + math.sin(a) * (ry + 34)), 5 * K, 5 * K, fill=BLANCO)
 
 
 def frente_catrin(l):

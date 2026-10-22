@@ -19,7 +19,7 @@ La máscara no se pega como una calcomanía plana: se pinta **encima de la piel 
 | Ajuste | Qué hace | Valor |
 | --- | --- | --- |
 | `luzPiel` | Cuánto toma la pintura la luz y las sombras de la cara (0 = nada, 1 = todo) | 0.9 |
-| `pielEnBlanco` | Cuánta piel se transparenta en las zonas claras | 0.15 |
+| `pielEnBlanco` | Cuánta piel se transparenta en las zonas claras | 0.05 |
 | `detalle` | Cuánto detalle fino de la piel pasa a la pintura (arrugas, textura) | 0.15 |
 | `contraste` | Fuerza de las sombras (menor = más suaves) | 0.9 |
 | `opacidad` | Opacidad general de la pintura | 1 |

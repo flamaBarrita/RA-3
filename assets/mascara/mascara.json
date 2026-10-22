@@ -8,7 +8,7 @@
   "acabado": "maquillaje",
   "ajustesAcabado": {
     "luzPiel": 0.9,
-    "pielEnBlanco": 0.15,
+    "pielEnBlanco": 0.05,
     "contraste": 0.9,
     "detalle": 0.15,
     "opacidad": 1.0
