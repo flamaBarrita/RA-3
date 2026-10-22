@@ -8,9 +8,9 @@
   "acabado": "maquillaje",
   "ajustesAcabado": {
     "luzPiel": 0.9,
-    "pielEnBlanco": 0.0,
+    "pielEnBlanco": 0.15,
     "contraste": 0.9,
-    "detalle": 0.12,
+    "detalle": 0.15,
     "opacidad": 1.0
   },
   "sonidos": {

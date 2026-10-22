@@ -265,9 +265,10 @@ def capa_color(color, alfa):
 
 # ---------- elementos comunes ----------
 def base(l, color_base, intensidad_ocre):
-    oval = [p(i) for i in OVALO]
-    m = mascara_poligono(oval)
-    l.pegar(capa_color(color_base, m))
+    # llega hasta el borde de la cara y se desvanece suave, sin línea dura
+    borde = [lerp(p(o), p(a), 0.28) for o, a in zip(OVALO, ANILLO1)]
+    m = mascara_poligono(borde, 26 * K)
+    l.pegar(capa_color(color_base, m.point(lambda v: int(v * OPACIDAD_BASE))))
     # franja de sombreado ocre hacia el contorno (~120 px)
     interior = m.filter(ImageFilter.GaussianBlur(110 * K))
     banda = ImageChops.subtract(m, interior).point(lambda v: min(255, int(v * 2.2 * intensidad_ocre)))
@@ -331,6 +332,8 @@ def mejillas_hundidas(l):
     capa = capa.filter(ImageFilter.GaussianBlur(26 * K))
     l.pegar(capa, 0.4)
 
+
+OPACIDAD_BASE = 0.9   # la base deja ver un poco la piel
 
 CUENCA_RX, CUENCA_RY = 140, 116   # tamaño de las cuencas (px de 2048)
 CUENCA_Y = 784
@@ -548,11 +551,10 @@ def guardar(l, nombre):
 # ---------- variantes ----------
 def catrin():
     l = Lienzo()
-    contorno_negro(l)
     base(l, HUESO, 1.25)
     mejillas_hundidas(l)
     filigrana_comun(l)
-    cuencas(l, festonear=True)
+    cuencas(l, festonear=False)
     perlas_cuencas(l)
     nariz(l)
     dientes(l)
@@ -617,7 +619,6 @@ def catrin():
 
 def catrina():
     l = Lienzo()
-    contorno_negro(l)
     base(l, hexa("F3E9D8"), 1.0)
     mejillas_hundidas(l)
     filigrana_comun(l)
@@ -701,15 +702,6 @@ def corona(l):
         if t <= 0.5:
             return lerp(o, a, t * 2)
         return lerp(a, e, (t - 0.5) * 2)
-
-    # fondo negro bajo las flores (como el pelo)
-    capa = l.capa()
-    d = ImageDraw.Draw(capa)
-    interior = [en_anillo(k, 0.0) for k in arco]
-    exterior = [en_anillo(k, 0.85) for k in reversed(arco)]
-    d.polygon(interior + exterior, fill=NEGRO)
-    capa = capa.filter(ImageFilter.GaussianBlur(6 * K))
-    l.pegar(capa)
 
     d = ImageDraw.Draw(l.img)
     for j, k in enumerate(arco):

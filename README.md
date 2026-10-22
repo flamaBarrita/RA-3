@@ -6,7 +6,7 @@ Actividad 3 · Máscara de Día de Muertos con mapeo facial de precisión (mejor
 
 ![Catrín (arriba) y catrina (abajo) sobre la malla en Blender, de frente, a 30° y a 60°](docs/img/catrin_catrina_blender.jpg)
 
-Hay dos máscaras: **catrín** (`assets/mascara/textura_catrin.png`) y **catrina** (`assets/mascara/textura_catrina.png`). Se eligen con los botones **Catrina / Catrín** de abajo (o con `?mascara=catrin` en la dirección); la última elegida se recuerda. Empieza con la catrina (`inicial` en `mascara.json`). Están pintadas **estilo maquillaje**: un velo claro que cubre toda la cara y deja ver la piel, sombras de color con pedrería alrededor de los ojos, nariz y labios de color con costuras finas, filigrana en las mejillas y, en la catrina, corona de rosas. No hay contornos negros. Se generan con `tools/generar_texturas_maquillaje.py` (la versión anterior, de calavera opaca, sigue en `tools/generar_texturas_catrines.py`, con el diseño de [docs/DISENO_CATRINES.md](docs/DISENO_CATRINES.md)), y se pueden retocar a mano en Blender con [docs/GUIA_TEXTURA.md](docs/GUIA_TEXTURA.md).
+Hay dos máscaras: **catrín** (`assets/mascara/textura_catrin.png`) y **catrina** (`assets/mascara/textura_catrina.png`). Se eligen con los botones **Catrina / Catrín** de abajo (o con `?mascara=catrin` en la dirección); la última elegida se recuerda. Empieza con la catrina (`inicial` en `mascara.json`). Siguen el diseño de [docs/DISENO_CATRINES.md](docs/DISENO_CATRINES.md) y se generan con `tools/generar_texturas_catrines.py`. La base llega hasta el borde de la cara y se desvanece suave, sin contorno negro, para que se vea pegada a la piel, y se pueden retocar a mano en Blender con [docs/GUIA_TEXTURA.md](docs/GUIA_TEXTURA.md).
 
 ## Acabado realista: maquillaje sobre la piel
 
@@ -19,8 +19,8 @@ La máscara no se pega como una calcomanía plana: se pinta **encima de la piel 
 | Ajuste | Qué hace | Valor |
 | --- | --- | --- |
 | `luzPiel` | Cuánto toma la pintura la luz y las sombras de la cara (0 = nada, 1 = todo) | 0.9 |
-| `pielEnBlanco` | Cuánta piel se transparenta en las zonas claras (el velo ya es translúcido en la textura) | 0 |
-| `detalle` | Cuánto detalle fino de la piel pasa a la pintura (arrugas, textura) | 0.12 |
+| `pielEnBlanco` | Cuánta piel se transparenta en las zonas claras | 0.15 |
+| `detalle` | Cuánto detalle fino de la piel pasa a la pintura (arrugas, textura) | 0.15 |
 | `contraste` | Fuerza de las sombras (menor = más suaves) | 0.9 |
 | `opacidad` | Opacidad general de la pintura | 1 |
 
@@ -114,8 +114,7 @@ blender/
   textura.png                 imagen que pinta el .blend (empieza con la catrina)
 tools/
   generar_datos_cara.py       genera datos-cara.js, cara_base.obj y las plantillas
-  generar_texturas_maquillaje.py  dibuja catrín y catrina estilo maquillaje (las actuales)
-  generar_texturas_catrines.py  versión anterior (calavera opaca)
+  generar_texturas_catrines.py  dibuja las texturas de catrín y catrina
   generar_textura_provisional.py  textura provisional de prueba (primera versión)
   preparar_blender.py         crea el .blend para pintar
 pruebas/seguimiento.test.mjs  pruebas del seguimiento
